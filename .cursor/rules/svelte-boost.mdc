@@ -1,0 +1,202 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+<svelte-boost-guidelines>
+=== foundation rules ===
+
+# Svelte Boost Guidelines
+
+These guidelines are curated for a SvelteKit application. Follow them to keep the project consistent, performant, and easy to maintain.
+
+## Foundational Context
+This application uses the Svelte + SvelteKit stack. Treat these versions as the source of truth (update as needed for your project):
+
+- node - 20.x LTS
+- svelte (SVELTE) - v5.x
+- @sveltejs/kit (KIT) - v2.x
+- vite (VITE) - v5.x
+- typescript (TS) - v5.x
+- eslint (ESLINT) - v9.x
+- prettier (PRETTIER) - v3.x
+- tailwindcss (TAILWIND) - v3/4 (pick one)
+- vitest (VITEST) - v1.x
+- @playwright/test (PLAYWRIGHT) - v1.x
+
+## Conventions
+- Mirror existing code style. Before adding files, skim siblings for naming and patterns.
+- Prefer TypeScript across the codebase. Export explicit types for public APIs.
+- Use descriptive names: `useLongPress`, `getUserSession`, `isHydrated`, not `util`, `data`, `tmp`.
+- Co-locate component-specific helpers next to components (e.g., `Component.svelte`, `Component.types.ts`, `Component.spec.ts`).
+- Reuse existing components and stores before adding new ones.
+
+## Verification Scripts
+- Prefer Vitest unit tests and Playwright e2e tests over ad-hoc scripts.
+- Don’t add throwaway verification pages or debug endpoints when tests already cover the behavior.
+
+## Application Structure & Architecture
+- Stick to SvelteKit’s file-based routing. Don’t invent parallel routing systems.
+- Keep server-only code in `+page.server.ts`, `+layout.server.ts`, `+server.ts`, or `src/lib/server/**`.
+- Keep browser-only code in `.svelte` or `.ts` files that are imported by client components.
+- Avoid new top-level folders without approval. Use `$lib` for shared code.
+
+## Frontend Bundling
+- If UI changes don’t appear, ask the user to run `npm run dev` (hot reload) or `npm run build` and `npm run preview`.
+- For adapter changes (Node, Vercel, Cloudflare), confirm before editing `svelte.config.js`.
+
+## Replies
+- Be concise. Explain only what’s necessary to unblock or clarify.
+
+## Documentation Files
+- Create or change docs only when explicitly requested.
+
+=== boost rules ===
+
+## Svelte Boost
+- Svelte Boost is an MCP server with tools tailored for this app. Use them to stay aligned with project configuration.
+
+## NPM Scripts
+- Use the `list-npm-scripts` tool before invoking scripts to confirm names/flags.
+- Prefer scripts over ad-hoc commands (e.g., `npm run test`, not `vitest` directly).
+
+## URLs
+- When sharing app URLs, use the `get-absolute-url` tool to resolve correct scheme/host/port (works in dev/prod).
+
+## Debugging
+- Use the `browser-logs` tool to inspect recent console errors/warnings from the browser session.
+- Use `server-logs` or equivalent Boost tools if available to check server-side errors.
+
+## Searching Documentation (Critical)
+- Use the `search-docs` tool first for Svelte/SvelteKit/Tailwind/Vite/Playwright/Vitest docs scoped to the project’s versions.
+- Start with broad, topic-based queries like `["load function", "form actions", "endpoint response", "hooks", "env"]`.
+- Don’t add package names to queries unless needed; versions are passed automatically.
+
+### Available Search Syntax
+1. Single words with stemming: `routing`
+2. Multiple words (AND): `form actions`
+3. Exact phrases: `"server only"`
+4. Mixed: `hooks "handle" sequence`
+5. Multiple queries: `["load", "page data", "layout data"]`
+
+=== svelte/core rules ===
+
+## Components
+- Use Svelte 5 runes idioms when enabled (`$state`, `$derived`, `$effect`) or project-preferred store patterns. Don’t mix styles in the same component.
+- Keep components pure where possible. Side effects go in `$effect` or lifecycle handlers.
+- Use `export let propName: Type;` for props. Validate assumptions with types, not runtime checks unless necessary.
+
+## Styling
+- Prefer Tailwind utility classes if Tailwind is enabled. Otherwise, use component-scoped styles.
+- Avoid global CSS unless truly global (e.g., resets, typography, CSS vars).
+
+## State Management
+- Prefer component-local state. If shared, use Svelte stores under `src/lib/stores/**`.
+- Keep server-derived state out of global stores; fetch via `load` and pass down where possible.
+
+## Accessibility
+- Use semantic HTML. Ensure focus states, labels, aria-* as needed.
+- Don’t disable outlines. Test with keyboard navigation.
+
+=== sveltekit/v2 rules ===
+
+## Routing & Files
+- Use `+page.svelte`, `+page.ts`, `+page.server.ts`, `+layout.svelte`, `+layout.ts`, `+layout.server.ts`, `+error.svelte`.
+- Server endpoints live in `+server.ts` using standard HTTP methods (`GET`, `POST`, etc).
+- Keep data-fetching in `load` functions. Use `parent()` to cascade layout data.
+- Use `redirect()` and `error()` helpers for control flow.
+
+## Load Functions
+- Use `+page.server.ts` for data requiring secrets or server APIs.
+- Use `+page.ts` (universal) only for data safe to run on both server and client.
+- Return the smallest data needed. Consider `depends()` keys to enable fine-grained invalidation.
+
+## Form Actions
+- Implement actions in `+page.server.ts`. Return `{ form }` data for progressive enhancement.
+- Use `fail(status, data)` for validation errors and `redirect(status, location)` when navigation is required.
+
+## Hooks
+- Centralize auth/session logic in `src/hooks.server.ts` (`handle`, `handleFetch`).
+- Avoid heavy work in hooks; prefer per-route logic where possible.
+
+## Environment Variables
+- Use `$env/static/private` and `$env/dynamic/private` on the server. **Never** leak secrets to the client.
+- Use `$env/static/public` for safe, compile-time public vars (`PUBLIC_` prefix).
+- Do not access `process.env` directly in app code.
+
+## Adapters & Deployment
+- Don’t change adapters without approval (`adapter-node`, `adapter-vercel`, etc.).
+- Confirm platform-specific constraints (Edge runtimes, CF Workers) before using Node APIs.
+
+## Errors & Redirects
+- Use `throw error(404, 'Not found')` and `throw redirect(303, '/login')`.
+- Provide user-friendly `+error.svelte`. Don’t leak stack traces in production.
+
+=== data & api rules ===
+
+## Fetching
+- Use the platform `fetch` passed into `load`/actions for SSR and cookies support.
+- For external APIs, wrap fetchers in `$lib/server/api/*.ts` to centralize auth, retries, and error mapping.
+
+## Validation
+- Validate inputs on the server with a schema (e.g., Zod). Never trust client data.
+- Return structured errors to the client (e.g., `{ fieldErrors, message }`).
+
+## Security
+- Keep credentials and tokens on the server. Use HttpOnly cookies for session.
+- Set appropriate cache headers on endpoints. Avoid caching private responses.
+
+=== performance rules ===
+
+## Bundling & Code Splitting
+- Prefer per-route `load` and per-component imports to keep chunks small.
+- Use `await import('...')` for large optional dependencies.
+
+## Images & Assets
+- Use modern formats (AVIF/WebP). Provide width/height to prevent layout shifts.
+- For critical images, use responsive sizes and `loading="lazy"` where appropriate.
+
+## Hydration
+- Avoid heavy client-side JS in static pages. Consider progressive enhancement or server-first rendering.
+
+=== testing rules ===
+
+## Vitest
+- Unit tests live near code or under `src/lib/**/__tests__/**`.
+- Mock fetch and platform APIs as needed. Avoid network calls in unit tests.
+
+## Playwright
+- E2E tests under `tests/e2e/**`.
+- Cover critical flows: auth, navigation, forms, error states, a11y smoke tests.
+- Run headed mode or trace on failures when debugging.
+
+## Running Tests
+- All tests: `npm run test` (Vitest), `npm run test:e2e` (Playwright).
+- Filtered runs: `npm run test -- -t "name"`.
+
+=== linting & formatting rules ===
+
+## ESLint & Prettier
+- Run linters before commit: `npm run lint`, `npm run format`.
+- Don’t override project-wide rules without approval.
+- Prefer `svelte-check` for type/syntax diagnostics: `npm run check`.
+
+=== dx & scripts rules ===
+
+## NPM Scripts (examples — adjust to your repo)
+- `dev`: start dev server
+- `build`: prod build
+- `preview`: preview prod build
+- `check`: run `svelte-check`
+- `lint`: run ESLint on `src/**`
+- `format`: run Prettier
+- `test`: run Vitest
+- `test:e2e`: run Playwright
+
+=== replies rules ===
+
+## Communication
+- Be brief and pragmatic. Link to relevant files/lines when possible.
+- When sharing a local URL, use the `get-absolute-url` tool to avoid wrong ports/hosts.
+
+</svelte-boost-guidelines>
