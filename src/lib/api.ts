@@ -78,19 +78,29 @@ class ApiClient {
 	private token: string | null = null;
 
 	constructor() {
-		// Try to get token from localStorage on client side
+		// Try to get token from localStorage on client side (Safari compatibility)
 		if (typeof window !== 'undefined') {
-			this.token = localStorage.getItem('auth_token');
+			try {
+				this.token = localStorage.getItem('auth_token');
+			} catch (error) {
+				console.log('LocalStorage access error in constructor:', error);
+				this.token = null;
+			}
 		}
 	}
 
 	setToken(token: string | null) {
 		this.token = token;
 		if (typeof window !== 'undefined') {
-			if (token) {
-				localStorage.setItem('auth_token', token);
-			} else {
-				localStorage.removeItem('auth_token');
+			try {
+				if (token) {
+					localStorage.setItem('auth_token', token);
+				} else {
+					localStorage.removeItem('auth_token');
+				}
+			} catch (error) {
+				console.log('LocalStorage write error:', error);
+				// Continue anyway - token is still set in memory
 			}
 		}
 	}
@@ -115,6 +125,11 @@ class ApiClient {
 				...options,
 				headers
 			});
+
+			// Better error handling for Safari
+			if (!response.ok) {
+				console.log(`API Error: ${response.status} ${response.statusText} for ${url}`);
+			}
 
 			const data = await response.json();
 

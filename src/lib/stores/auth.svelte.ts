@@ -10,19 +10,32 @@ export const authStore = (() => {
 	const initialize = async () => {
 		if (isInitialized) return;
 		
-
-		
 		isLoading = true;
 		try {
-			const response = await api.getUser();
+			// Check if we have a token first (Safari compatibility)
+			let existingToken = null;
+			if (typeof window !== 'undefined') {
+				try {
+					existingToken = localStorage.getItem('auth_token');
+				} catch (error) {
+					console.log('LocalStorage access error (possibly private browsing):', error);
+				}
+			}
 			
-			// Handle the actual response structure from your Laravel API
-			if (response.data) {
-				user = response.data;
-			} else if ((response as any).user) {
-				user = (response as any).user;
+			// Only try to get user if we have a token
+			if (existingToken) {
+				const response = await api.getUser();
+				
+				// Handle the actual response structure from your Laravel API
+				if (response.data) {
+					user = response.data;
+				} else if ((response as any).user) {
+					user = (response as any).user;
+				} else {
+					user = response as any; // fallback if response is the user object directly
+				}
 			} else {
-				user = response as any; // fallback if response is the user object directly
+				user = null;
 			}
 		} catch (error) {
 			console.log('Not authenticated or token expired');
@@ -59,6 +72,8 @@ export const authStore = (() => {
 			
 			if (token && userData) {
 				api.setToken(token);
+				// Small delay for Safari localStorage compatibility
+				await new Promise(resolve => setTimeout(resolve, 10));
 				user = userData;
 			}
 			return response;
@@ -91,6 +106,8 @@ export const authStore = (() => {
 			
 			if (token && userData) {
 				api.setToken(token);
+				// Small delay for Safari localStorage compatibility
+				await new Promise(resolve => setTimeout(resolve, 10));
 				user = userData;
 			}
 			

@@ -12,6 +12,7 @@
 
 	const handleSubmit = async (e: Event) => {
 		e.preventDefault();
+		e.stopPropagation();
 		error = '';
 
 		if (!name || !email || !password || !passwordConfirmation) {
@@ -31,7 +32,11 @@
 
 		try {
 			await authStore.register(name, email, password, passwordConfirmation);
-			goto('/dashboard');
+			// Small delay for Safari to process authentication state
+			await new Promise(resolve => setTimeout(resolve, 50));
+			if (authStore.isAuthenticated) {
+				goto('/dashboard');
+			}
 		} catch (err: any) {
 			error = err.message || 'Registration failed. Please try again.';
 		}
@@ -63,7 +68,7 @@
 			</p>
 		</div>
 
-		<form class="mt-6 sm:mt-8 space-y-4 sm:space-y-6" on:submit={handleSubmit}>
+		<form class="mt-6 sm:mt-8 space-y-4 sm:space-y-6" onsubmit={handleSubmit}>
 			{#if error}
 				<div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
 					{error}

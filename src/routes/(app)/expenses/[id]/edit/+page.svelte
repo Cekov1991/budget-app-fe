@@ -129,7 +129,7 @@
 		{/if}
 
 		<div class="bg-white rounded-lg shadow-sm p-4 sm:p-6">
-			<form class="space-y-4" on:submit={handleSubmit}>
+			<form class="space-y-4" onsubmit={handleSubmit}>
 				<Input
 					label="Description"
 					bind:value={description}
